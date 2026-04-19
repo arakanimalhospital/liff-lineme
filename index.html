@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Redirecting...</title>
-
-  <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-B94E123XFC"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -13,10 +11,7 @@
     gtag('js', new Date());
     gtag('config', 'G-B94E123XFC', { send_page_view: false });
   </script>
-
-  <style>
-    body { margin: 0; background: #fff; }
-  </style>
+  <style>body { margin: 0; background: #fff; }</style>
 </head>
 <body>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -27,8 +22,6 @@
   function extractUtm(search) {
     var p = new URLSearchParams(search);
     var utmData = {};
-
-    // Try liff.state first (LIFF encodes params here)
     var liffState = p.get('liff.state');
     if (liffState) {
       try {
@@ -40,18 +33,26 @@
         });
       } catch(e) {}
     }
-
-    // Fallback: read directly from URL
     if (Object.keys(utmData).length === 0) {
       utmKeys.forEach(function(k) {
         if (p.get(k)) utmData[k] = p.get(k);
       });
     }
-
     return utmData;
   }
 
+  function doRedirect(utmData) {
+    var dest = new URL(LINE_OA_URL);
+    Object.keys(utmData).forEach(function(k) { dest.searchParams.set(k, utmData[k]); });
+    window.location.replace(dest.toString());
+  }
+
   function fireAndRedirect(utmData) {
+    var redirectDone = false;
+    function redirect() {
+      if (!redirectDone) { redirectDone = true; doRedirect(utmData); }
+    }
+
     if (typeof gtag !== 'undefined') {
       gtag('set', {
         campaign_source:  utmData.utm_source   || '',
@@ -61,34 +62,26 @@
         campaign_term:    utmData.utm_term     || ''
       });
       gtag('event', 'page_view', Object.assign({
-        page_title:    'LIFF UTM Tracker',
+        page_title: 'LIFF UTM Tracker',
         page_location: window.location.href
       }, utmData));
       gtag('event', 'line_redirect', Object.assign({
         event_category: 'engagement',
-        event_label: utmData.utm_campaign || '(none)'
+        event_label: utmData.utm_campaign || '(none)',
+        event_callback: redirect
       }, utmData));
+    } else {
+      redirect();
     }
-
-    // Small delay to let GA fire before redirect
-    setTimeout(function() {
-      var dest = new URL(LINE_OA_URL);
-      Object.keys(utmData).forEach(function(k) {
-        dest.searchParams.set(k, utmData[k]);
-      });
-      window.location.replace(dest.toString());
-    }, 300);
+    setTimeout(redirect, 1500);
   }
 
-  // Init LIFF to get proper URL after LIFF resolves liff.state
   liff.init({ liffId: '2009829426-ebOZt8Au' })
     .then(function() {
-      var utmData = extractUtm(window.location.search);
-      fireAndRedirect(utmData);
+      fireAndRedirect(extractUtm(window.location.search));
     })
     .catch(function() {
-      var utmData = extractUtm(window.location.search);
-      fireAndRedirect(utmData);
+      fireAndRedirect(extractUtm(window.location.search));
     });
 </script>
 </body>
