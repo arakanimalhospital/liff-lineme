@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Redirecting...</title>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-B94E123XFC"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-B94E123XFC', { send_page_view: false });
+  </script>
+
+  <style>
+    body { margin: 0; background: #fff; }
+  </style>
+</head>
+<body>
+<script>
+  var LINE_OA_URL = 'https://lin.ee/ZMQLEKZ';
+
+  function getParams() {
+    var search = window.location.search;
+
+    // LIFF encodes UTM inside liff.state — decode it
+    var liffState = new URLSearchParams(search).get('liff.state');
+    if (liffState) {
+      try {
+        var decoded = decodeURIComponent(liffState);
+        // liff.state can be "?utm_source=fb&..." or just "utm_source=fb&..."
+        if (decoded.indexOf('?') === 0) decoded = decoded.slice(1);
+        return new URLSearchParams(decoded);
+      } catch(e) {}
+    }
+
+    // fallback: read directly from URL
+    return new URLSearchParams(search);
+  }
+
+  var utmKeys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+  var params  = getParams();
+  var utmData = {};
+  utmKeys.forEach(function(k){ if (params.get(k)) utmData[k] = params.get(k); });
+
+  // Fire GA4 with UTM data
+  if (typeof gtag !== 'undefined') {
+    gtag('set', {
+      campaign_source:  utmData.utm_source   || '',
+      campaign_medium:  utmData.utm_medium   || '',
+      campaign_name:    utmData.utm_campaign || '',
+      campaign_content: utmData.utm_content  || '',
+      campaign_term:    utmData.utm_term     || ''
+    });
+    gtag('event', 'page_view', Object.assign({
+      page_title:    'LIFF UTM Tracker',
+      page_location: window.location.href
+    }, utmData));
+    gtag('event', 'line_redirect', Object.assign({
+      event_category: 'engagement',
+      event_label: utmData.utm_campaign || '(none)'
+    }, utmData));
+  }
+
+  // Redirect immediately
+  var dest = new URL(LINE_OA_URL);
+  Object.keys(utmData).forEach(function(k){ dest.searchParams.set(k, utmData[k]); });
+  window.location.replace(dest.toString());
+</script>
+</body>
+</html>
